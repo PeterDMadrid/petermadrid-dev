@@ -1,0 +1,23 @@
+import { Container } from "@/components/layout/container";
+import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/lib/site-config";
+
+export function Hero() {
+  return (
+    <section className="rule-line flex min-h-screen items-center border-b border-rule pt-16">
+      <Container>
+        <p className="font-mono text-xs text-gold">{"// " + siteConfig.role}</p>
+        <h1 className="mt-4 max-w-3xl font-display text-5xl leading-tight text-paper md:text-7xl">
+          {siteConfig.name}
+        </h1>
+        <p className="mt-6 max-w-xl font-body text-lg text-paper/80">
+          {siteConfig.description}
+        </p>
+        <div className="mt-10 flex gap-4">
+          <Button>View work</Button>
+          <Button variant="ghost">Contact</Button>
+        </div>
+      </Container>
+    </section>
+  );
+}
