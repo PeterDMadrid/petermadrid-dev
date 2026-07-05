@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { Container } from "@/components/layout/container";
 import { Button } from "@/components/ui/button";
+import { ContributionGraph } from "@/components/sections/contribution-graph";
 import { siteConfig } from "@/lib/site-config";
 
 export function Hero() {
@@ -17,6 +19,9 @@ export function Hero() {
           <Button>View work</Button>
           <Button variant="ghost">Contact</Button>
         </div>
+        <Suspense fallback={<p className="mt-10 font-mono text-xs text-muted">Loading contributions…</p>}>
+          <ContributionGraph username={siteConfig.githubUsername} />
+        </Suspense>
       </Container>
     </section>
   );
