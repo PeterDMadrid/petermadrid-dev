@@ -44,6 +44,7 @@ async function main() {
         const res = await ai.models.embedContent({
             model: EMBEDDING_MODEL,
             contents: chunk.text,
+            config: { taskType: "RETRIEVAL_DOCUMENT" },
         });
         const values = res.embeddings?.[0]?.values;
         if (!values) throw new Error(`No embedding returned for ${chunk.id}`);

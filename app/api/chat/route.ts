@@ -1,4 +1,4 @@
-import { ai, CHAT_MODEL } from "@/lib/gemini-client";
+import { ai, generateWithFallback } from "@/lib/gemini-client";
 import { cosineSimilarity } from "@/lib/similarity";
 import rawVectors from "@/lib/vectors.json";
 
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     const embedRes = await ai.models.embedContent({
         model: "gemini-embedding-001",
         contents: question,
+        config: { taskType: "RETRIEVAL_QUERY" },
     });
     const queryVec = embedRes.embeddings?.[0]?.values;
     if (!queryVec) {
@@ -32,9 +33,7 @@ export async function POST(req: Request) {
 
     const context = topChunks.map((c) => c.text).join("\n\n---\n\n");
 
-    const response = await ai.models.generateContent({
-        model: CHAT_MODEL,
-        contents: `
+    const response = await generateWithFallback(`
 You are Peter Madrid's AI Portfolio Assistant.
 
 Your purpose is to help visitors learn about Peter's skills, projects, experience, and services.
@@ -52,8 +51,7 @@ ${context}
 
 Question:
 ${question}
-`,
-    });
+`);
 
     return Response.json({
         answer: response.text,

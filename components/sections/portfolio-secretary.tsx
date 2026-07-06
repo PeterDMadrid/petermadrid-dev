@@ -16,11 +16,19 @@ const BOOT_LINES: BootLine[] = [
     { text: "STATUS: READY FOR INTAKE // SELECT AN ACTION BELOW_", tag: "[ONLINE]", tagColor: "text-gold" },
 ];
 
+const TYPE_SPEED_MS = 15;
+
+function Cursor() {
+    return <span className="ps-cursor" />;
+}
+
 export function PortfolioSecretary() {
     const [visibleLines, setVisibleLines] = useState(0);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
+    const [typedLength, setTypedLength] = useState(0);
     const bodyRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -30,15 +38,28 @@ export function PortfolioSecretary() {
     }, [visibleLines]);
 
     useEffect(() => {
+        if (pendingAnswer === null) return;
+        if (typedLength >= pendingAnswer.length) {
+            setMessages((m) => [...m, { role: "assistant", text: pendingAnswer }]);
+            setPendingAnswer(null);
+            setTypedLength(0);
+            return;
+        }
+        const timer = setTimeout(() => setTypedLength((n) => n + 1), TYPE_SPEED_MS);
+        return () => clearTimeout(timer);
+    }, [pendingAnswer, typedLength]);
+
+    useEffect(() => {
         bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
-    }, [messages, loading]);
+    }, [messages, loading, typedLength]);
 
     const bootDone = visibleLines >= BOOT_LINES.length;
+    const busy = loading || pendingAnswer !== null;
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         const question = input.trim();
-        if (!question || loading) return;
+        if (!question || busy) return;
 
         setMessages((m) => [...m, { role: "user", text: question }]);
         setInput("");
@@ -49,12 +70,28 @@ export function PortfolioSecretary() {
             body: JSON.stringify({ question }),
         });
         const data = await res.json();
-        setMessages((m) => [...m, { role: "assistant", text: data.answer }]);
         setLoading(false);
+        setPendingAnswer(data.answer);
+        setTypedLength(0);
     }
 
     return (
         <div className="overflow-hidden rounded-lg border border-rule bg-ink shadow-xl">
+            <style>{`
+        @keyframes ps-blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+        .ps-cursor {
+          display: inline-block;
+          width: 8px;
+          height: 16px;
+          margin-left: 2px;
+          background-color: var(--color-gold, #c9a227);
+          vertical-align: middle;
+          animation: ps-blink 1s step-end infinite;
+        }
+      `}</style>
             <div className="flex items-center gap-2 border-b border-rule px-4 py-3">
                 <span className="h-3 w-3 rounded-full" style={{ background: "#FF5F56" }} />
                 <span className="h-3 w-3 rounded-full" style={{ background: "#FFBD2E" }} />
@@ -88,7 +125,15 @@ export function PortfolioSecretary() {
                     </p>
                 )}
 
-                {bootDone && !loading && (
+                {pendingAnswer !== null && (
+                    <p className="text-sage">
+                        <span className="text-muted">{"$ "}</span>
+                        {pendingAnswer.slice(0, typedLength)}
+                        <Cursor />
+                    </p>
+                )}
+
+                {bootDone && !busy && (
                     <form onSubmit={handleSubmit} className="flex items-center pt-1">
                         <span className="text-muted">{"> "}</span>
                         <input
@@ -98,7 +143,7 @@ export function PortfolioSecretary() {
                             placeholder="ask about Peter's work"
                             className="flex-1 bg-transparent text-paper outline-none placeholder:text-muted/60"
                         />
-                        <span className="animate-pulse text-paper">|</span>
+                        <Cursor />
                     </form>
                 )}
             </div>
