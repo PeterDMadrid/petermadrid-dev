@@ -9,6 +9,7 @@ export const siteConfig = {
     { label: "GitHub", href: "https://github.com/PeterDMadrid" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/peter-madrid-99752223b/" },
   ],
+  currentlyBuilding: "mid-flight on an installment-payment module for an LMS",
 };
 
 export const navItems = [

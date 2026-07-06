@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Container } from "@/components/layout/container";
 import { Button } from "@/components/ui/button";
 import { ContributionGraph } from "@/components/sections/contribution-graph";
+import { LiveStatus } from "@/components/sections/live-status";
 import { PortfolioSecretary } from "@/components/sections/portfolio-secretary";
 import { siteConfig } from "@/lib/site-config";
 
@@ -45,7 +46,11 @@ export function Hero() {
               </Button>
             </div>
 
-            <div className="mt-14">
+            <Suspense fallback={null}>
+              <LiveStatus username={siteConfig.githubUsername} />
+            </Suspense>
+
+            <div className="mt-10">
               <Suspense fallback={<p className="font-mono text-xs text-muted">Loading contributions…</p>}>
                 <ContributionGraph username={siteConfig.githubUsername} />
               </Suspense>
