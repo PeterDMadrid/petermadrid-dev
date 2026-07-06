@@ -27,7 +27,7 @@ export async function ContributionGraph({ username }: { username: string }) {
                     [ACTIVITY]
                 </p>
                 <p className="font-mono text-xs text-gold">
-                    {calendar.totalContributions} contributions
+                    {calendar.totalContributions} recent contributions
                 </p>
             </div>
             <div className="relative mt-3 w-full overflow-x-auto pb-1">
