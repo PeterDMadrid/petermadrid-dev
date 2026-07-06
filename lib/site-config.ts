@@ -12,8 +12,9 @@ export const siteConfig = {
 };
 
 export const navItems = [
-  { index: "01", label: "Work", href: "#work" },
-  { index: "02", label: "About", href: "#about" },
-  { index: "03", label: "Skills", href: "#skills" },
-  { index: "04", label: "Contact", href: "#contact" },
+  { index: "01", label: "Experiences", href: "#experience" },
+  { index: "02", label: "Projects", href: "#project" },
+  { index: "03", label: "About", href: "#about" },
+  { index: "04", label: "Skills", href: "#skills" },
+  { index: "05", label: "Contact", href: "#contact" },
 ];
