@@ -23,12 +23,10 @@ body {
 }
 
 .rule-line {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 27px,
-    var(--color-rule) 28px
-  );
+  background-image: repeating-linear-gradient(to bottom,
+      transparent,
+      transparent 27px,
+      var(--color-rule) 28px);
 }
 
 ::selection {

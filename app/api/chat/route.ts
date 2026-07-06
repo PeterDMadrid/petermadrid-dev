@@ -1,4 +1,4 @@
-import { ai, CHAT_MODEL } from "@/lib/gemini-client";
+import { ai, generateWithFallback } from "@/lib/gemini-client";
 import { cosineSimilarity } from "@/lib/similarity";
 import rawVectors from "@/lib/vectors.json";
 
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     const embedRes = await ai.models.embedContent({
         model: "gemini-embedding-001",
         contents: question,
+        config: { taskType: "RETRIEVAL_QUERY" },
     });
     const queryVec = embedRes.embeddings?.[0]?.values;
     if (!queryVec) {
@@ -32,15 +33,28 @@ export async function POST(req: Request) {
 
     const context = topChunks.map((c) => c.text).join("\n\n---\n\n");
 
-    const response = await ai.models.generateContent({
-        model: CHAT_MODEL,
-        contents: `System: You are Peter's portfolio assistant. Answer ONLY using the context below. If the context doesn't contain the answer, say you don't have that information — never guess or use outside knowledge.
+    const response = await generateWithFallback(`
+You are Peter Madrid's AI Portfolio Assistant.
+
+Your purpose is to help visitors learn about Peter's skills, projects, experience, and services.
+
+Rules:
+- Use ONLY the provided context when stating facts about Peter.
+- Never invent information.
+- If the answer is not in the context, say you don't have that information.
+- If the user greets you, introduce yourself and explain what you can help with.
+- If the user asks for an opinion about Peter, summarize relevant facts from the context instead of making subjective judgments.
+- Be concise and professional.
 
 Context:
 ${context}
 
-Question: ${question}`,
-    });
+Question:
+${question}
+`);
 
-    return Response.json({ answer: response.text, sources: topChunks.map((c) => c.source) });
+    return Response.json({
+        answer: response.text,
+        sources: topChunks.map((c) => c.source),
+    });
 }

@@ -16,11 +16,19 @@ const BOOT_LINES: BootLine[] = [
     { text: "STATUS: READY FOR INTAKE // SELECT AN ACTION BELOW_", tag: "[ONLINE]", tagColor: "text-gold" },
 ];
 
+const TYPE_SPEED_MS = 15;
+
+function Cursor() {
+    return <span className="ps-cursor" />;
+}
+
 export function PortfolioSecretary() {
     const [visibleLines, setVisibleLines] = useState(0);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [pendingAnswer, setPendingAnswer] = useState<string | null>(null);
+    const [typedLength, setTypedLength] = useState(0);
     const bodyRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -30,15 +38,28 @@ export function PortfolioSecretary() {
     }, [visibleLines]);
 
     useEffect(() => {
+        if (pendingAnswer === null) return;
+        if (typedLength >= pendingAnswer.length) {
+            setMessages((m) => [...m, { role: "assistant", text: pendingAnswer }]);
+            setPendingAnswer(null);
+            setTypedLength(0);
+            return;
+        }
+        const timer = setTimeout(() => setTypedLength((n) => n + 1), TYPE_SPEED_MS);
+        return () => clearTimeout(timer);
+    }, [pendingAnswer, typedLength]);
+
+    useEffect(() => {
         bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
-    }, [messages, loading]);
+    }, [messages, loading, typedLength]);
 
     const bootDone = visibleLines >= BOOT_LINES.length;
+    const busy = loading || pendingAnswer !== null;
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         const question = input.trim();
-        if (!question || loading) return;
+        if (!question || busy) return;
 
         setMessages((m) => [...m, { role: "user", text: question }]);
         setInput("");
@@ -49,12 +70,35 @@ export function PortfolioSecretary() {
             body: JSON.stringify({ question }),
         });
         const data = await res.json();
-        setMessages((m) => [...m, { role: "assistant", text: data.answer }]);
         setLoading(false);
+        setPendingAnswer(data.answer);
+        setTypedLength(0);
     }
 
     return (
-        <div className="overflow-hidden rounded-lg border border-rule bg-ink shadow-xl">
+        <div className="w-full max-w-full overflow-hidden rounded-lg border border-rule bg-ink shadow-xl">
+            <style>{`
+                @keyframes ps-blink {
+                    0%, 49% { opacity: 1; }
+                    50%, 100% { opacity: 0; }
+                }
+                .ps-cursor {
+                    display: inline-block;
+                    width: 8px;
+                    height: 16px;
+                    margin-left: 2px;
+                    background-color: var(--color-gold, #c9a227);
+                    vertical-align: middle;
+                    animation: ps-blink 1s step-end infinite;
+                }
+                @media (max-width: 640px) {
+                    .ps-cursor {
+                        width: 5px;
+                        height: 12px;
+                    }
+                }
+            `}</style>
+
             <div className="flex items-center gap-2 border-b border-rule px-4 py-3">
                 <span className="h-3 w-3 rounded-full" style={{ background: "#FF5F56" }} />
                 <span className="h-3 w-3 rounded-full" style={{ background: "#FFBD2E" }} />
@@ -64,41 +108,58 @@ export function PortfolioSecretary() {
                 </span>
             </div>
 
-            <div ref={bodyRef} className="h-96 space-y-1 overflow-y-auto p-6 font-mono text-sm">
+            <div
+                ref={bodyRef}
+                className="
+                    h-96 w-full overflow-y-auto overflow-x-hidden p-6
+                    max-[640px]:h-72 max-[640px]:p-3
+                "
+            >
                 {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
-                    <p key={i} className="text-paper/90">
+                    <p key={i} className="text-paper/90 break-words max-[640px]:text-[10px]">
                         <span className="text-muted">{"> "}</span>
                         {line.text}
-                        {line.tag && <span className={`ml-2 ${line.tagColor}`}>{line.tag}</span>}
+                        {line.tag && <span className={`ml-2 max-[640px]:ml-1 ${line.tagColor}`}>{line.tag}</span>}
                     </p>
                 ))}
 
                 {bootDone &&
                     messages.map((m, i) => (
-                        <p key={i} className={m.role === "user" ? "text-paper/90" : "text-sage"}>
+                        <p key={i} className={`break-words max-[640px]:text-[10px] ${m.role === "user" ? "text-paper/90" : "text-sage"}`}>
                             <span className="text-muted">{m.role === "user" ? "> " : "$ "}</span>
                             {m.text}
                         </p>
                     ))}
 
                 {loading && (
-                    <p className="text-muted">
+                    <p className="text-muted max-[640px]:text-[10px]">
                         <span>{"$ "}</span>
                         <span className="animate-pulse">···</span>
                     </p>
                 )}
 
-                {bootDone && !loading && (
-                    <form onSubmit={handleSubmit} className="flex items-center pt-1">
-                        <span className="text-muted">{"> "}</span>
+                {pendingAnswer !== null && (
+                    <p className="text-sage break-words max-[640px]:text-[10px]">
+                        <span className="text-muted">{"$ "}</span>
+                        {pendingAnswer.slice(0, typedLength)}
+                        <Cursor />
+                    </p>
+                )}
+
+                {bootDone && !busy && (
+                    <form onSubmit={handleSubmit} className="flex items-center pt-1 w-full">
+                        <span className="text-muted flex-shrink-0 max-[640px]:text-[10px]">{"> "}</span>
                         <input
                             autoFocus
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="ask about Peter's work"
-                            className="flex-1 bg-transparent text-paper outline-none placeholder:text-muted/60"
+                            className="
+                                min-w-0 flex-1 bg-transparent text-paper outline-none placeholder:text-muted/60
+                                text-sm max-[640px]:text-[10px]
+                            "
                         />
-                        <span className="animate-pulse text-paper">|</span>
+                        <Cursor />
                     </form>
                 )}
             </div>
